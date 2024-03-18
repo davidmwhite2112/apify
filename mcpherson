@@ -1,0 +1,36 @@
+import requests
+from apify import ApifyClient
+
+# Define the Apify settings
+apify_settings = {
+    'startUrls': ['https://www.gomcpherson.com/jobs'],
+    'pageFunction': '''
+        async function pageFunction(context) {
+            const { request, response, page } = context;
+            const jobs = [];
+            const jobElements = await page.$$eval('.job-listing', elements => elements.map(element => {
+                const title = element.querySelector('.job-title').textContent.trim();
+                const company = element.querySelector('.company').textContent.trim();
+                const location = element.querySelector('.location').textContent.trim();
+                const description = element.querySelector('.description').textContent.trim();
+                return { title, company, location, description };
+            }));
+            jobs.push(...jobElements);
+            return jobs;
+        }
+    ''',
+}
+
+# Initialize Apify client
+client = ApifyClient()
+
+# Run the Apify actor
+job_info = client.actor("apify/cheerio").call(input=apify_settings)
+
+# Print the job information
+for job in job_info['output']:
+    print(f"Job Title: {job['title']}")
+    print(f"Company: {job['company']}")
+    print(f"Location: {job['location']}")
+    print(f"Description: {job['description']}")
+    print()
